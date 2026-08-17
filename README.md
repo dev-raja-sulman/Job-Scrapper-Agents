@@ -1,61 +1,98 @@
-# Agentic AI Job Scraper — Complete Starter (Phases 0–6)
+<div align="center">
+  <h1>🚀 Agentic AI Job Scraper</h1>
+  <p><strong>Autonomous Job Discovery, Matching, and Application Assistant</strong></p>
+</div>
 
-A fully working FastAPI application — every endpoint below has been run
-and tested, not just written. Implements:
+---
 
-- **Phase 0** — project structure, DB schema (SQLite by default, one env
-  var away from Postgres)
-- **Phase 1** — a real, working scraper (RemoteOK public API — no auth
-  needed) + a Playwright template for JS-heavy sites like LinkedIn/Indeed
-- **Phase 2** — resume upload (PDF/DOCX/TXT → extracted text) and real
-  TF-IDF + cosine-similarity matching (runs offline, no API cost; upgrade
-  path to true embeddings is sketched in `matching.py`)
-- **Phase 3** — LLM-powered job summarization + red-flag detection via the
-  Claude API, with graceful fallback if no key is configured
-- **Phase 4** — scheduled scraping via APScheduler (runs automatically in
-  the background at `SCRAPE_INTERVAL_MINUTES`)
-- **Phase 5** — tailored cover-letter drafting per match, for user review
-- **Phase 6** — a working dashboard at `/app` (review queue, match scores
-  as signal bars, status tracking, cover-letter modal) — pure HTML/JS, no
-  build step required
+A fully functional, end-to-end FastAPI application designed to streamline the job search process using Agentic AI. This platform automates job scraping, intelligent resume matching using TF-IDF, and AI-powered job summarization and cover letter drafting using the **Groq API**.
 
-**Not included** (by design — see Phase 7/8 in the roadmap doc): auto-apply
-browser automation and production deployment hardening. These are the
-highest-risk, most site-specific pieces and are best tackled once you've
-picked your actual target job sites.
+## ✨ Features (Phases 0–6 Implemented)
 
-## Quick start
+- **Phase 0: Solid Foundation** — Clean project structure with a scalable database schema (SQLite by default, easily upgradeable to Postgres).
+- **Phase 1: Autonomous Scraper** — A real, working scraper for the RemoteOK public API, plus a Playwright template for JS-heavy sites like LinkedIn or Indeed.
+- **Phase 2: Intelligent Matching** — Resume parsing (PDF/DOCX/TXT) with offline TF-IDF and cosine-similarity matching to rank jobs against your skills. No API costs for matching.
+- **Phase 3: AI Summarization & Insights** — LLM-powered job summarization and red-flag detection (e.g., vague pay, unrealistic requirements) powered by the **Groq API** (Mixtral 8x7B). Falls back gracefully if no API key is provided.
+- **Phase 4: Scheduled Operations** — Automated background scraping using `APScheduler` at customizable intervals.
+- **Phase 5: Automated Cover Letters** — Tailored cover-letter drafting based on the specific job description and your resume.
+- **Phase 6: Interactive Dashboard** — A zero-build vanilla HTML/JS dashboard at `/app` featuring a review queue, visual match scores, LLM insights, and a cover-letter generation modal.
+
+> **Note:** Auto-apply browser automation (Phase 7) is intentionally excluded from the base project due to site-specific Terms of Service and varying anti-bot measures.
+
+---
+
+## 🛠️ Technology Stack
+
+- **Backend Framework:** FastAPI, Uvicorn
+- **Database:** SQLAlchemy (SQLite, Postgres-ready)
+- **AI & NLP:** Groq API (Mixtral 8x7B), Scikit-Learn (TF-IDF, Cosine Similarity)
+- **Background Tasks:** APScheduler
+- **Document Processing:** PyPDF, python-docx
+- **Frontend:** Vanilla HTML/JS/CSS (served statically via FastAPI)
+
+---
+
+## 🚀 Quick Start
+
+### 1. Clone & Setup Environment
 
 ```bash
+# Navigate to the project directory
 cd job-scraper-agent
+
+# Create and activate a virtual environment
 python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
+source venv/bin/activate        # On Windows: venv\Scripts\activate
 
+# Install dependencies
 pip install -r requirements.txt
+```
 
-cp .env.example .env            # then edit .env with your ANTHROPIC_API_KEY
+### 2. Configuration
 
+Copy the example environment file and add your credentials:
+
+```bash
+cp .env.example .env
+```
+
+Open `.env` and configure your **Groq API Key**:
+```env
+GROQ_API_KEY=your_groq_api_key_here
+```
+
+### 3. Run the Application
+
+Start the FastAPI server:
+
+```bash
 uvicorn app.main:app --reload --port 8001
 ```
 
-Visit **http://localhost:8001/docs** for interactive Swagger UI, or
-**http://localhost:8001/app** for the dashboard.
+- 🌐 **Interactive Dashboard:** [http://localhost:8001/app](http://localhost:8001/app)
+- 📖 **API Documentation (Swagger UI):** [http://localhost:8001/docs](http://localhost:8001/docs)
 
-## Try it end to end
+---
 
-**Fastest path: use the dashboard.** Open `http://localhost:8001/app`,
-click "Set up profile", then "Scan for jobs" and "Re-rank matches". Your
-ranked review queue appears with match-strength bars, LLM summaries (if
-`ANTHROPIC_API_KEY` is set), and one-click cover-letter drafting.
+## 🎯 Usage Guide
 
-**Or drive it via the API directly:**
+### Method A: The Dashboard (Recommended)
 
-1. **Trigger a scrape** (pulls live jobs from RemoteOK, filtered by
-   `SEARCH_KEYWORDS` in `.env`):
+1. Open [http://localhost:8001/app](http://localhost:8001/app) in your browser.
+2. Click **Set up profile** to add your details and upload your resume.
+3. Click **Scan for jobs** to trigger the scraper.
+4. Click **Re-rank matches** to see jobs scored against your profile.
+5. Review jobs, check for LLM-identified red flags, and click to generate tailored cover letters!
+
+### Method B: REST API Direct Usage
+
+If you prefer the terminal, you can drive the entire workflow via cURL:
+
+1. **Trigger a scrape** (pulls live jobs from RemoteOK, filtered by `.env` keywords):
    ```bash
    curl -X POST http://localhost:8001/jobs/scrape
    ```
-2. **Check what got stored:**
+2. **View scraped jobs:**
    ```bash
    curl http://localhost:8001/jobs
    ```
@@ -65,68 +102,56 @@ ranked review queue appears with match-strength bars, LLM summaries (if
      -H "Content-Type: application/json" \
      -d '{"name":"Ali","email":"ali@example.com","skills":"python,fastapi,sql","preferred_role":"Backend Engineer"}'
    ```
-4. **Upload a resume** (PDF, DOCX, or TXT — used to sharpen matching and
-   cover-letter drafts):
+4. **Upload a resume** (PDF/DOCX/TXT) to enhance matching and cover letters:
    ```bash
    curl -X POST http://localhost:8001/users/1/resume -F "file=@resume.pdf"
    ```
-5. **Generate ranked + summarized matches:**
+5. **Generate ranked matches with AI summaries:**
    ```bash
    curl -X POST "http://localhost:8001/users/1/match?top_n=10"
    ```
-6. **View matches:**
-   ```bash
-   curl http://localhost:8001/users/1/matches
-   ```
-7. **Draft a cover letter for a specific match:**
+6. **Draft a tailored cover letter for a match:**
    ```bash
    curl -X POST http://localhost:8001/users/1/matches/1/cover-letter
    ```
-8. **Update a match's status** as you work through the queue:
-   ```bash
-   curl -X PATCH "http://localhost:8001/users/1/matches/1/status?status=applied"
-   ```
 
-## What's next (Phase 7+, intentionally left for you)
+---
 
-- **More scrapers**: use `app/scrapers/playwright_template.py` as a
-  starting point for JS-heavy sites (LinkedIn, Indeed) — check each site's
-  Terms of Service first, and prefer official APIs/RSS where they exist.
-- **Real embeddings**: swap `app/services/matching.py`'s TF-IDF for Voyage
-  AI / OpenAI embeddings + a vector DB (Chroma/Pinecone) once you're
-  matching against thousands of jobs — the function signature (`rank_jobs`)
-  stays identical, so nothing else changes.
-- **Auto-apply**: Playwright-based form-fill with a mandatory
-  human-approval step before final submission — this is the highest-risk
-  component (site ToS, spam risk) so it's deliberately not included here.
-- **Postgres + deploy**: `docker-compose.yml` has a commented Postgres
-  service ready to uncomment when you outgrow SQLite.
+## 🗺️ Roadmap & Next Steps (Phase 7+)
 
-## Project structure
+- [ ] **Advanced Scrapers:** Use `app/scrapers/playwright_template.py` to build scrapers for JS-heavy sites like LinkedIn or Indeed. *(Ensure compliance with site ToS).*
+- [ ] **Vector Embeddings:** Swap `app/services/matching.py`'s TF-IDF for true embeddings (e.g., SentenceTransformers, OpenAI) and a vector database (Chroma/Pinecone) to scale matching to thousands of jobs.
+- [ ] **Interview Prep Module:** Fully integrate the `generate_interview_prep` function to provide targeted Q&A practice.
+- [ ] **Production Deployment:** Switch the database to Postgres (uncomment in `docker-compose.yml`) and deploy via Docker.
 
-```
+---
+
+## 📂 Project Structure
+
+```text
 job-scraper-agent/
 ├── app/
-│   ├── main.py              # FastAPI app + startup scheduler
-│   ├── config.py            # env-based settings
-│   ├── database.py          # SQLAlchemy engine/session
-│   ├── models.py            # Job, User, Match tables
-│   ├── schemas.py           # Pydantic request/response models
-│   ├── scheduler.py         # periodic scraping (APScheduler)
-│   ├── scrapers/
-│   │   ├── base.py          # abstract scraper interface
-│   │   ├── remoteok.py      # working scraper (public API)
-│   │   └── playwright_template.py  # template for JS-heavy sites
-│   ├── services/
-│   │   ├── ingestion.py     # scraper -> DB pipeline
-│   │   ├── matching.py      # resume/job scoring
-│   │   └── llm.py           # Claude API: summaries, cover letters
-│   └── routers/
+│   ├── main.py              # FastAPI application & startup scheduler
+│   ├── config.py            # Environment-based configuration
+│   ├── database.py          # SQLAlchemy engine and session management
+│   ├── models.py            # Database tables (Job, User, Match)
+│   ├── schemas.py           # Pydantic request/response validation models
+│   ├── scheduler.py         # Periodic scraping setup (APScheduler)
+│   ├── scrapers/            # Web scraping modules
+│   │   ├── base.py          
+│   │   ├── remoteok.py      
+│   │   └── playwright_template.py 
+│   ├── services/            # Core business logic
+│   │   ├── ingestion.py     # Scraper -> Database pipeline
+│   │   ├── matching.py      # Resume/Job scoring logic
+│   │   └── llm.py           # Groq API: Summaries, cover letters, interview prep
+│   └── routers/             # API Endpoints
 │       ├── jobs.py
 │       └── users.py
-├── requirements.txt
-├── Dockerfile
-└── .env.example
+├── static/                  # Vanilla frontend dashboard files
+├── requirements.txt         # Project dependencies
+├── Dockerfile               # Containerization definition
+├── docker-compose.yml       # Multi-container orchestration (Ready for Postgres)
+└── .env.example             # Environment variable template
 ```
-# Job-Scrapper-Agents
 # Job-Scrapper-Agents
