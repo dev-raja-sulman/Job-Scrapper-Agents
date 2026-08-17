@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Agent Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0B0E11;
+    --panel: #12161B;
+    --panel-border: #23282F;
+    --text: #EDEEF0;
+    --text-dim: #7A8290;
+    --amber: #E8A33D;
+    --amber-dim: #4A3A20;
+    --cyan: #5EC8D8;
+    --red: #E5675C;
+    --green: #6FCF97;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+  }
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 28px;
+    border-bottom: 1px solid var(--panel-border);
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .brand-mark {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--amber);
+    box-shadow: 0 0 12px var(--amber);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+  .brand-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    letter-spacing: 0.02em;
+  }
+  .brand-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+  .topbar-actions { display: flex; gap: 10px; align-items: center; }
+  .status-chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--green);
+    border: 1px solid #1F3A2A;
+    background: #10231A;
+    padding: 5px 10px;
+    border-radius: 20px;
+  }
+  button {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 9px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--panel-border);
+    background: var(--panel);
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color .15s ease;
+  }
+  button:hover { border-color: var(--amber); }
+  button.primary {
+    background: var(--amber);
+    color: #1A1200;
+    border-color: var(--amber);
+  }
+  button.primary:hover { filter: brightness(1.08); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 0;
+  }
+  .rail {
+    border-right: 1px solid var(--panel-border);
+    padding: 24px 16px;
+    min-height: calc(100vh - 65px);
+  }
+  .rail-section { margin-bottom: 28px; }
+  .rail-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    padding: 6px 0;
+    color: var(--text-dim);
+  }
+  .stat-row b { color: var(--text); font-family: 'JetBrains Mono', monospace; }
+  .tab {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--text-dim);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    margin-bottom: 2px;
+  }
+  .tab:hover { background: var(--panel); color: var(--text); }
+  .tab.active { background: var(--panel); color: var(--amber); border: 1px solid var(--amber-dim); }
+
+  .main { padding: 28px; }
+  .main-header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 20px;
+  }
+  .main-title { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; }
+  .main-hint { font-size: 13px; color: var(--text-dim); }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 12px;
+    display: grid;
+    grid-template-columns: 90px 1fr 160px;
+    gap: 18px;
+    align-items: center;
+  }
+  .signal-wrap { display: flex; flex-direction: column; align-items: flex-start; }
+  .signal { display: flex; align-items: flex-end; gap: 3px; height: 28px; }
+  .signal-bar { width: 6px; background: #23282F; border-radius: 2px; }
+  .signal-bar.on { background: var(--amber); }
+  .signal-score {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--amber);
+    margin-top: 4px;
+  }
+  .job-title { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 15px; margin-bottom: 3px; }
+  .job-meta { font-size: 12.5px; color: var(--text-dim); }
+  .job-meta span { margin-right: 12px; }
+  .job-summary { font-size: 12.5px; color: var(--text-dim); margin-top: 8px; line-height: 1.5; }
+  .red-flag {
+    display: inline-block; margin-top: 8px;
+    font-size: 11px; color: var(--red);
+    border: 1px solid #3A2020; background: #201212;
+    padding: 3px 8px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .card-actions { display: flex; flex-direction: column; gap: 6px; }
+  .card-actions button { font-size: 12px; padding: 7px 10px; }
+
+  .empty {
+    text-align: center; padding: 60px 20px; color: var(--text-dim);
+  }
+  .empty-title { font-family: 'Space Grotesk', sans-serif; font-size: 16px; color: var(--text); margin-bottom: 6px; }
+
+  .modal-backdrop {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
+    align-items: center; justify-content: center; z-index: 50;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: var(--panel); border: 1px solid var(--panel-border);
+    border-radius: 10px; padding: 24px; width: 520px; max-width: 90vw;
+    max-height: 80vh; overflow-y: auto;
+  }
+  .modal h3 { font-family: 'Space Grotesk', sans-serif; margin-top: 0; }
+  .modal textarea, .modal input {
+    width: 100%; background: #0B0E11; border: 1px solid var(--panel-border);
+    color: var(--text); border-radius: 6px; padding: 10px; font-family: 'Inter', sans-serif;
+    font-size: 13px; margin-bottom: 10px;
+  }
+  .modal textarea { min-height: 160px; resize: vertical; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark"></div>
+    <div>
+      <div class="brand-name">JOB AGENT CONSOLE</div>
+      <div class="brand-sub">agentic-job-scraper // v0.1</div>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <span class="status-chip" id="statusChip">● connecting</span>
+    <button id="scrapeBtn">Scan for jobs</button>
+    <button class="primary" id="rankBtn">Re-rank matches</button>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="rail">
+    <div class="rail-section">
+      <div class="rail-label">Profile</div>
+      <div id="profileBox">
+        <div class="stat-row"><span>User</span><b id="userLabel">none</b></div>
+      </div>
+      <button id="setupBtn" style="width:100%; margin-top:10px;">Set up profile</button>
+    </div>
+    <div class="rail-section">
+      <div class="rail-label">Stats</div>
+      <div class="stat-row"><span>Jobs tracked</span><b id="statJobs">0</b></div>
+      <div class="stat-row"><span>New matches</span><b id="statNew">0</b></div>
+      <div class="stat-row"><span>Applied</span><b id="statApplied">0</b></div>
+    </div>
+    <div class="rail-section">
+      <div class="rail-label">View</div>
+      <button class="tab active" data-status="new">Review queue</button>
+      <button class="tab" data-status="reviewed">Reviewed</button>
+      <button class="tab" data-status="applied">Applied</button>
+      <button class="tab" data-status="rejected">Rejected</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="main-header">
+      <div class="main-title" id="viewTitle">Review queue</div>
+      <div class="main-hint">Ranked by resume/job similarity — click a job to draft a cover letter</div>
+    </div>
+    <div id="cardList"></div>
+  </div>
+</div>
+
+<!-- Profile setup modal -->
+<div class="modal-backdrop" id="profileModal">
+  <div class="modal">
+    <h3>Set up your profile</h3>
+    <input id="pName" placeholder="Name">
+    <input id="pEmail" placeholder="Email">
+    <input id="pRole" placeholder="Preferred role (e.g. Backend Engineer)">
+    <input id="pSkills" placeholder="Skills, comma-separated (e.g. python, fastapi, sql)">
+    <div class="modal-actions">
+      <button onclick="closeModal('profileModal')">Cancel</button>
+      <button class="primary" id="saveProfileBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Cover letter modal -->
+<div class="modal-backdrop" id="letterModal">
+  <div class="modal">
+    <h3 id="letterTitle">Cover letter</h3>
+    <textarea id="letterText" readonly>Generating…</textarea>
+    <div class="modal-actions">
+      <button onclick="closeModal('letterModal')">Close</button>
+      <button class="primary" onclick="copyLetter()">Copy</button>
+    </div>
+  </div>
+</div>
+
+<!-- Auto-Apply modal -->
+<div class="modal-backdrop" id="autoApplyModal">
+  <div class="modal" style="width: 800px; max-width: 95vw;">
+    <h3 id="autoApplyTitle">Auto-Apply Copilot</h3>
+    <div id="autoApplyStatus" style="margin-bottom: 15px; font-size: 14px;">Launching browser...</div>
+    <img id="autoApplyImage" style="max-width: 100%; border-radius: 6px; display: none; border: 1px solid var(--panel-border);">
+    <div class="modal-actions">
+      <button onclick="closeModal('autoApplyModal')">Close</button>
+      <button class="primary" id="autoApplyFinishBtn" style="display: none;" onclick="window.open(this.dataset.url, '_blank')">Open in Browser to Submit</button>
+    </div>
+  </div>
+</div>
+
+<!-- Interview Prep modal -->
+<div class="modal-backdrop" id="interviewModal">
+  <div class="modal" style="width: 700px; max-width: 90vw;">
+    <h3 id="interviewTitle">Interview Prep</h3>
+    <textarea id="interviewText" readonly style="min-height: 250px;">Generating questions...</textarea>
+    <div class="modal-actions">
+      <button onclick="closeModal('interviewModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = window.location.origin;
+let currentUserId = localStorage.getItem('agentUserId') || null; // safe: plain id, not sensitive
+let currentStatus = 'new';
+let allMatches = [];
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+async function api(path, opts = {}) {
+  const res = await fetch(API + path, {
+    headers: { 'Content-Type': 'application/json' },
+    ...opts,
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+async function checkHealth() {
+  try {
+    await api('/health');
+    document.getElementById('statusChip').textContent = '● online';
+  } catch {
+    document.getElementById('statusChip').textContent = '● offline';
+    document.getElementById('statusChip').style.color = '#E5675C';
+  }
+}
+
+document.getElementById('setupBtn').onclick = () => openModal('profileModal');
+
+document.getElementById('saveProfileBtn').onclick = async () => {
+  const body = {
+    name: document.getElementById('pName').value,
+    email: document.getElementById('pEmail').value,
+    preferred_role: document.getElementById('pRole').value,
+    skills: document.getElementById('pSkills').value,
+  };
+  try {
+    const user = await api('/users', { method: 'POST', body: JSON.stringify(body) });
+    currentUserId = user.id;
+    localStorage.setItem('agentUserId', user.id);
+    document.getElementById('userLabel').textContent = user.name;
+    closeModal('profileModal');
+    loadMatches();
+  } catch (e) {
+    alert('Could not save profile: ' + e.message);
+  }
+};
+
+document.getElementById('scrapeBtn').onclick = async () => {
+  const btn = document.getElementById('scrapeBtn');
+  btn.disabled = true; btn.textContent = 'Scanning…';
+  try {
+    const result = await api('/jobs/scrape', { method: 'POST' });
+    await loadStats();
+    btn.textContent = `+${result.new_jobs_inserted} new`;
+  } catch (e) {
+    btn.textContent = 'Scan failed';
+  }
+  setTimeout(() => { btn.disabled = false; btn.textContent = 'Scan for jobs'; }, 2000);
+};
+
+document.getElementById('rankBtn').onclick = async () => {
+  if (!currentUserId) { openModal('profileModal'); return; }
+  const btn = document.getElementById('rankBtn');
+  btn.disabled = true; btn.textContent = 'Ranking…';
+  try {
+    await api(`/users/${currentUserId}/match?top_n=25`, { method: 'POST' });
+    await loadMatches();
+  } finally {
+    btn.disabled = false; btn.textContent = 'Re-rank matches';
+  }
+};
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.onclick = () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentStatus = tab.dataset.status;
+    document.getElementById('viewTitle').textContent = tab.textContent;
+    renderCards();
+  };
+});
+
+async function loadStats() {
+  try {
+    const jobs = await api('/jobs?limit=1000');
+    document.getElementById('statJobs').textContent = jobs.length;
+  } catch {}
+}
+
+async function loadMatches() {
+  if (!currentUserId) {
+    document.getElementById('cardList').innerHTML = emptyState('No profile yet', 'Set up your profile to start seeing ranked matches.');
+    return;
+  }
+  try {
+    allMatches = await api(`/users/${currentUserId}/matches`);
+    document.getElementById('statNew').textContent = allMatches.filter(m => m.status === 'new').length;
+    document.getElementById('statApplied').textContent = allMatches.filter(m => m.status === 'applied').length;
+    renderCards();
+  } catch (e) {
+    document.getElementById('cardList').innerHTML = emptyState('Could not load matches', e.message);
+  }
+}
+
+function signalBars(score) {
+  const filled = Math.round(score * 5);
+  let bars = '';
+  for (let i = 1; i <= 5; i++) {
+    const h = 8 + i * 4;
+    bars += `<div class="signal-bar ${i <= filled ? 'on' : ''}" style="height:${h}px"></div>`;
+  }
+  // Wrapped in one container so it counts as a single grid item — otherwise
+  // the score badge breaks out into its own implicit grid column/row.
+  return `<div class="signal-wrap"><div class="signal">${bars}</div><div class="signal-score">${Math.round(score * 100)}%</div></div>`;
+}
+
+function emptyState(title, hint) {
+  return `<div class="empty"><div class="empty-title">${title}</div><div>${hint}</div></div>`;
+}
+
+function renderCards() {
+  const filtered = allMatches.filter(m => m.status === currentStatus);
+  const list = document.getElementById('cardList');
+
+  if (filtered.length === 0) {
+    list.innerHTML = emptyState(
+      'Nothing here yet',
+      currentStatus === 'new'
+        ? 'Click "Scan for jobs" then "Re-rank matches" to populate your queue.'
+        : `No jobs marked "${currentStatus}" yet.`
+    );
+    return;
+  }
+
+  list.innerHTML = filtered.map(m => `
+    <div class="card">
+      ${signalBars(m.score)}
+      <div>
+        <div class="job-title">${escapeHtml(m.job.title)}</div>
+        <div class="job-meta">
+          <span>${escapeHtml(m.job.company || 'Unknown company')}</span>
+          <span>${escapeHtml(m.job.location || '')}</span>
+          ${m.job.salary ? `<span>${escapeHtml(m.job.salary)}</span>` : ''}
+        </div>
+        ${m.summary ? `<div class="job-summary">${escapeHtml(m.summary)}</div>` : ''}
+        ${m.red_flags ? `<div class="red-flag">⚠ ${escapeHtml(m.red_flags)}</div>` : ''}
+      </div>
+      <div class="card-actions">
+        <button onclick="window.open('${m.job.url}', '_blank')">View posting</button>
+        <button onclick="draftLetter(${m.id}, '${escapeAttr(m.job.title)}')">Draft cover letter</button>
+        <button onclick="getInterviewPrep(${m.id}, '${escapeAttr(m.job.title)}')">Interview Prep</button>
+        <button class="primary" onclick="autoApply(${m.id}, '${escapeAttr(m.job.title)}', '${m.job.url}')">Auto-Apply (Copilot)</button>
+        ${currentStatus !== 'applied' ? `<button onclick="setStatus(${m.id}, 'applied')">Mark applied</button>` : ''}
+        ${currentStatus === 'new' ? `<button onclick="setStatus(${m.id}, 'rejected')">Skip</button>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+async function setStatus(matchId, status) {
+  await api(`/users/${currentUserId}/matches/${matchId}/status?status=${status}`, { method: 'PATCH' });
+  await loadMatches();
+}
+
+async function draftLetter(matchId, title) {
+  document.getElementById('letterTitle').textContent = `Cover letter — ${title}`;
+  document.getElementById('letterText').value = 'Generating…';
+  openModal('letterModal');
+  try {
+    const result = await api(`/users/${currentUserId}/matches/${matchId}/cover-letter`, { method: 'POST' });
+    document.getElementById('letterText').value = result.cover_letter;
+  } catch (e) {
+    document.getElementById('letterText').value = 'Could not generate letter: ' + e.message;
+  }
+}
+
+async function autoApply(matchId, title, url) {
+  document.getElementById('autoApplyTitle').textContent = `Auto-Apply: ${title}`;
+  document.getElementById('autoApplyStatus').textContent = 'Launching browser and filling form (this may take 10-20 seconds)...';
+  document.getElementById('autoApplyImage').style.display = 'none';
+  document.getElementById('autoApplyFinishBtn').style.display = 'none';
+  openModal('autoApplyModal');
+  
+  try {
+    const result = await api(`/users/${currentUserId}/matches/${matchId}/auto-apply`, { method: 'POST' });
+    document.getElementById('autoApplyStatus').textContent = 'Form filled successfully! Please review the screenshot below. Click "Open in Browser" to finish submitting manually to comply with Terms of Service.';
+    document.getElementById('autoApplyImage').src = API + result.screenshot_url;
+    document.getElementById('autoApplyImage').style.display = 'block';
+    
+    const finishBtn = document.getElementById('autoApplyFinishBtn');
+    finishBtn.dataset.url = url;
+    finishBtn.style.display = 'inline-block';
+  } catch (e) {
+    document.getElementById('autoApplyStatus').textContent = 'Error: ' + e.message;
+  }
+}
+
+function copyLetter() {
+  navigator.clipboard.writeText(document.getElementById('letterText').value);
+}
+
+async function getInterviewPrep(matchId, title) {
+  document.getElementById('interviewTitle').textContent = `Interview Prep: ${title}`;
+  document.getElementById('interviewText').value = 'Generating tailored questions based on your resume and the job description...';
+  openModal('interviewModal');
+  try {
+    const result = await api(`/users/${currentUserId}/matches/${matchId}/interview-prep`, { method: 'POST' });
+    document.getElementById('interviewText').value = result.prep_notes;
+  } catch (e) {
+    document.getElementById('interviewText').value = 'Could not generate prep: ' + e.message;
+  }
+}
+
+function escapeHtml(s) {
+  return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escapeAttr(s) { return escapeHtml(s).replace(/'/g, "\\'"); }
+
+// init
+checkHealth();
+loadStats();
+if (currentUserId) {
+  document.getElementById('userLabel').textContent = 'user #' + currentUserId;
+  loadMatches();
+} else {
+  document.getElementById('cardList').innerHTML = emptyState('No profile yet', 'Click "Set up profile" in the left rail to get started.');
+}
+</script>
+</body>
+</html>

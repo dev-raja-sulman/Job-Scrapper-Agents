@@ -1,0 +1,25 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./jobs.db:/app/jobs.db
+    env_file:
+      - .env
+    restart: unless-stopped
+
+# To move to Postgres in production, uncomment below and set
+# DATABASE_URL=postgresql://agent:agent@db:5432/jobs in .env
+#
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: agent
+      POSTGRES_PASSWORD: agent
+      POSTGRES_DB: jobs
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
